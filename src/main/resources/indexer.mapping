@@ -1,0 +1,25 @@
+{
+	"settings": {
+		"index": {
+			"number_of_shards": 1,
+			"number_of_replicas": 0,
+			"refresh_interval": "60s"
+		}
+	},
+	"mappings": {
+			"_source": {
+				"enabled": true
+			},
+			"properties": {
+				"content": {
+					"type": "binary"
+				},
+				"method": {
+					"type": "keyword"
+				},
+				"url": {
+					"type": "keyword"
+				}
+			}
+	}
+}
