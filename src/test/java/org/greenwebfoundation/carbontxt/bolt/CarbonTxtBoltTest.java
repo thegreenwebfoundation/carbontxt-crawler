@@ -72,14 +72,14 @@ class CarbonTxtBoltTest {
         assertEquals(expectedBase64, metadata.getFirstValue(CONTENT));
         assertNull(metadata.getValues(ERRORS));
 
-        // Verify emit on default stream with status FETCHED
+        // Verify emit on default stream
         ArgumentCaptor<Values> valuesCaptor = ArgumentCaptor.forClass(Values.class);
         verify(collector).emit(eq(input), valuesCaptor.capture());
         
         Values values = valuesCaptor.getValue();
         assertEquals("https://example.com/carbon.txt", values.get(0));
-        assertEquals(metadata, values.get(1));
-        assertEquals(Status.FETCHED, values.get(2));
+        assertArrayEquals(contentBytes, (byte[]) values.get(1));
+        assertEquals(metadata, values.get(2));
 
         // Verify ack
         verify(collector).ack(input);

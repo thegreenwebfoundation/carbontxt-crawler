@@ -3,7 +3,6 @@ package org.greenwebfoundation.carbontxt.bolt;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
@@ -19,16 +18,13 @@ import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
 
 /**
- * Look for `CarbonTxt-Location: URL` in the HTTP header
- * or DNS TXT record in the format carbon-txt-location=URL
- * The latter is tried only for seeds with method value = root
+ * Looks for `CarbonTxt-Location: URL` in the HTTP header.
  * Writes the newly discovered URLs to the status stream as usual.
  **/
 public class HeaderDiscoveryBolt extends StatusEmitterBolt {
@@ -69,21 +65,18 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
         }
 
         // Look in HTTP headers metadata for CarbonTxt-Location (case-insensitive)
-        Set<String> keys = metadata.keySet(protocolMetadataPrefix);
-        for (String key : keys) {
-            String lowerCaseKey = key.toLowerCase(Locale.ROOT);
-            if ("carbontxt-location".equals(lowerCaseKey)) {
-                String carbonTxtLocation = metadata.getFirstValue(key);
-                LOG.info("Found match in http header for {} : {}", url, carbonTxtLocation);
-                Outlink ol = filterOutlink(sourceURL,carbonTxtLocation, metadata);
-                // override the value
-                if (ol != null) {
-                    ol.getMetadata().setValue(METHOD,"http");
-                    collector.emit("status", tuple, new Values(new Object[]{ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED}));
-                }
-                break;
+        String expectedKey = (protocolMetadataPrefix + "carbontxt-location").toLowerCase(Locale.ROOT);
+        String carbonTxtLocation = metadata.getFirstValue(expectedKey);
+        if (carbonTxtLocation != null) {
+            LOG.info("Found match in http header for {} : {}", url, carbonTxtLocation);
+            Outlink ol = filterOutlink(sourceURL, carbonTxtLocation, metadata);
+            // override the value
+            if (ol != null) {
+                ol.getMetadata().setValue(METHOD, "http");
+                collector.emit(_s, tuple, new Values(new Object[]{ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED}));
             }
         }
+
         collector.emit(tuple, new Values(url, metadata, Status.FETCHED));
         collector.ack(tuple);
     }

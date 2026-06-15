@@ -88,14 +88,14 @@ public class CarbonTxtBolt extends BaseRichBolt {
         }
 
         // Emit the carbon.txt document itself to the status stream as FETCHED
-        collector.emit(input, new Values(url, metadata, Status.FETCHED));
+        collector.emit(input, new Values(url, content, metadata));
         collector.ack(input);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // when sending invalid to the status index
-        declarer.declareStream(_s, new Fields("url", "content", "metadata"));
+        declarer.declareStream(_s, new Fields("url", "metadata", "status"));
         // Default stream passes non-carbon.txt tuples to the parser bolt
         declarer.declare(new Fields("url", "content", "metadata"));
     }

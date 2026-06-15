@@ -65,7 +65,7 @@ class HeaderDiscoveryBoltTest {
         context = mock(TopologyContext.class);
 
         Map<String, Object> conf = new HashMap<>();
-        conf.put(ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
+        conf.put(ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "somerandomprefix.");
         bolt.prepare(conf, context, collector);
     }
 
@@ -103,7 +103,7 @@ class HeaderDiscoveryBoltTest {
         
         Metadata metadata = new Metadata();
         // Use matching key with different casing to verify case-insensitivity
-        metadata.setValue("CarbonTxt-Location", "https://example.com/custom/carbon.txt");
+        metadata.setValue("somerandomprefix.CarbonTxt-Location", "https://example.com/custom/carbon.txt");
         when(input.getValueByField("metadata")).thenReturn(metadata);
 
         // Mock the outlink returned by filterOutlink
