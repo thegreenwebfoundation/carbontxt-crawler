@@ -2,15 +2,6 @@
 
 package org.greenwebfoundation.carbontxt.bolt;
 
-import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Fields;
@@ -24,14 +15,28 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class HeaderDiscoveryBoltTest {
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
-    private TestHeaderDiscoveryBolt bolt;
+import static org.greenwebfoundation.carbontxt.MetadataKeys.HOSTNAME;
+import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+class DNSDiscoveryBoltTest {
+
+    private TestDNSDiscoveryBolt bolt;
     private OutputCollector collector;
     private TopologyContext context;
 
+    private static final String TEST_INPUT_URL = "https://digitalpebble.com/carbon.txt";
+
     // Testable subclass to extract and override filterOutlink
-    private static class TestHeaderDiscoveryBolt extends HeaderDiscoveryBolt {
+    private static class TestDNSDiscoveryBolt extends DNSDiscoveryBolt {
         private Outlink outlinkToReturn;
         private URL capturedSourceURL;
         private String capturedTargetURL;
@@ -52,27 +57,28 @@ class HeaderDiscoveryBoltTest {
 
     @BeforeEach
     void setUp() {
-        bolt = new TestHeaderDiscoveryBolt();
+        bolt = new TestDNSDiscoveryBolt();
         collector = mock(OutputCollector.class);
         context = mock(TopologyContext.class);
 
         Map<String, Object> conf = new HashMap<>();
-        conf.put(ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "somerandomprefix.");
+        conf.put(ProtocolResponse.PROTOCOL_MD_PREFIX_PARAM, "");
         bolt.prepare(conf, context, collector);
     }
 
     @Test
-    void testExecuteWithNoMatchingHeader() {
+    void testExecuteWithNoMatchingDnsRecord() {
         Tuple input = mock(Tuple.class);
-        when(input.getStringByField("url")).thenReturn("https://example.com/");
+        when(input.getStringByField("url")).thenReturn(TEST_INPUT_URL);
         
         Metadata metadata = new Metadata();
-        metadata.setValue("other-header", "some-value");
+        metadata.setValue(METHOD, "root");
+        metadata.setValue(HOSTNAME, "example.com"); // example.com typically has no carbon-txt-location TXT record
         when(input.getValueByField("metadata")).thenReturn(metadata);
 
         bolt.execute(input);
 
-        // Verify no status stream emissions since no matching header
+        // Verify no status stream emissions since no matching record was found
         verify(collector, never()).emit(eq("status"), any(Tuple.class), any(Values.class));
 
         // Verify emit of original url with FETCHED status
@@ -80,7 +86,7 @@ class HeaderDiscoveryBoltTest {
         verify(collector).emit(eq(input), valuesCaptor.capture());
         
         Values values = valuesCaptor.getValue();
-        assertEquals("https://example.com/", values.get(0));
+        assertEquals(TEST_INPUT_URL, values.get(0));
         assertEquals(metadata, values.get(1));
         assertEquals(Status.FETCHED, values.get(2));
 
@@ -89,39 +95,40 @@ class HeaderDiscoveryBoltTest {
     }
 
     @Test
-    void testExecuteWithMatchingHeaderAndOutlinkPassedFilter() {
+    void testExecuteWithRealDnsLookupForDigitalPebble() throws Exception {
         Tuple input = mock(Tuple.class);
-        when(input.getStringByField("url")).thenReturn("https://example.com/");
+        when(input.getStringByField("url")).thenReturn(TEST_INPUT_URL);
         
         Metadata metadata = new Metadata();
-        // Use matching key with different casing to verify case-insensitivity
-        metadata.setValue("somerandomprefix.CarbonTxt-Location", "https://example.com/custom/carbon.txt");
+        metadata.setValue(METHOD, "root");
+        metadata.setValue(HOSTNAME, "digitalpebble.com");
         when(input.getValueByField("metadata")).thenReturn(metadata);
 
         // Mock the outlink returned by filterOutlink
         Outlink mockOutlink = mock(Outlink.class);
         Metadata outlinkMetadata = new Metadata();
         when(mockOutlink.getMetadata()).thenReturn(outlinkMetadata);
-        when(mockOutlink.getTargetURL()).thenReturn("https://example.com/custom/carbon.txt");
+        when(mockOutlink.getTargetURL()).thenReturn("https://digitalpebble.com/carbon.txt");
 
         bolt.setOutlinkToReturn(mockOutlink);
 
         bolt.execute(input);
 
         // Verify filterOutlink was called with correct parameters
-        assertEquals("https://example.com/", bolt.capturedSourceURL.toString());
-        assertEquals("https://example.com/custom/carbon.txt", bolt.capturedTargetURL);
+        assertNotNull(bolt.capturedSourceURL, "filterOutlink should have been called (real DNS lookup must have found the TXT record)");
+        assertEquals(TEST_INPUT_URL, bolt.capturedSourceURL.toString());
+        assertEquals("https://digitalpebble.com/carbon.txt", bolt.capturedTargetURL);
         assertEquals(metadata, bolt.capturedMetadata);
 
-        // Verify outlink metadata got method=http
-        assertEquals("http", outlinkMetadata.getFirstValue(METHOD));
+        // Verify outlink metadata got method=dns
+        assertEquals("dns", outlinkMetadata.getFirstValue(METHOD));
 
         // Verify emit of discovered outlink to status stream
         ArgumentCaptor<Values> statusValuesCaptor = ArgumentCaptor.forClass(Values.class);
         verify(collector).emit(eq("status"), eq(input), statusValuesCaptor.capture());
         
         Values statusValues = statusValuesCaptor.getValue();
-        assertEquals("https://example.com/custom/carbon.txt", statusValues.get(0));
+        assertEquals("https://digitalpebble.com/carbon.txt", statusValues.get(0));
         assertEquals(outlinkMetadata, statusValues.get(1));
         assertEquals(Status.DISCOVERED, statusValues.get(2));
 
@@ -130,39 +137,9 @@ class HeaderDiscoveryBoltTest {
         verify(collector).emit(eq(input), defaultValuesCaptor.capture());
         
         Values defaultValues = defaultValuesCaptor.getValue();
-        assertEquals("https://example.com/", defaultValues.get(0));
+        assertEquals(TEST_INPUT_URL, defaultValues.get(0));
         assertEquals(metadata, defaultValues.get(1));
         assertEquals(Status.FETCHED, defaultValues.get(2));
-
-        // Verify ack
-        verify(collector).ack(input);
-    }
-
-    @Test
-    void testExecuteWithMatchingHeaderAndOutlinkFiltered() {
-        Tuple input = mock(Tuple.class);
-        when(input.getStringByField("url")).thenReturn("https://example.com/");
-        
-        Metadata metadata = new Metadata();
-        metadata.setValue("carbontxt-location", "https://example.com/invalid");
-        when(input.getValueByField("metadata")).thenReturn(metadata);
-
-        // Filter returns null (outlink is filtered out)
-        bolt.setOutlinkToReturn(null);
-
-        bolt.execute(input);
-
-        // Verify no status stream emissions since outlink is filtered
-        verify(collector, never()).emit(eq("status"), any(Tuple.class), any(Values.class));
-
-        // Verify emit of original url with FETCHED status
-        ArgumentCaptor<Values> valuesCaptor = ArgumentCaptor.forClass(Values.class);
-        verify(collector).emit(eq(input), valuesCaptor.capture());
-        
-        Values values = valuesCaptor.getValue();
-        assertEquals("https://example.com/", values.get(0));
-        assertEquals(metadata, values.get(1));
-        assertEquals(Status.FETCHED, values.get(2));
 
         // Verify ack
         verify(collector).ack(input);

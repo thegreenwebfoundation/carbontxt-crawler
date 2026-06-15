@@ -14,6 +14,7 @@ import org.apache.stormcrawler.persistence.Status;
 
 import java.util.Map;
 
+import static org.greenwebfoundation.carbontxt.MetadataKeys.HOSTNAME;
 import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
 
 /**
@@ -47,16 +48,17 @@ public class SeedGenerator extends BaseRichBolt {
         // generate 2 candidate URLs for carbon.txt
         // assume a https prefix
         String candidate = "https://" + hostname + "/carbon.txt";
-        sendCandidate(candidate, "root", input);
+        sendCandidate(hostname, candidate, "root", input);
 
         String candidate2 = "https://" + hostname + "/.well-known/carbon.txt";
-        sendCandidate(candidate2, "well-known", input);
+        sendCandidate(hostname, candidate2, "well-known", input);
 
         collector.ack(input);
     }
 
-    private void sendCandidate(String candidate, String methodValue, Tuple input) {
+    private void sendCandidate(String hostname, String candidate, String methodValue, Tuple input) {
         Metadata metadata = new Metadata();
+        metadata.setValue(HOSTNAME, hostname);
         metadata.setValue(METHOD, methodValue);
         Values v = new Values(candidate, metadata, Status.DISCOVERED);
         collector.emit(_s, input, v);

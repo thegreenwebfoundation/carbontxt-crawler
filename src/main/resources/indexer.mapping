@@ -17,6 +17,9 @@
 				"method": {
 					"type": "keyword"
 				},
+                "hostname": {
+                    "type": "keyword"
+                },
 				"url": {
 					"type": "keyword"
 				}

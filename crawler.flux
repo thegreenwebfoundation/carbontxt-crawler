@@ -28,6 +28,9 @@ bolts:
   - id: "header"
     className: "org.greenwebfoundation.carbontxt.bolt.HeaderDiscoveryBolt"
     parallelism: 1
+  - id: "dns"
+    className: "org.greenwebfoundation.carbontxt.bolt.DNSDiscoveryBolt"
+    parallelism: 1
   - id: "carbontxt"
     className: "org.greenwebfoundation.carbontxt.bolt.CarbonTxtBolt"
     parallelism: 1
@@ -56,11 +59,23 @@ streams:
        type: LOCAL_OR_SHUFFLE
 
   - from: "header"
+    to: "dns"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+
+  - from: "dns"
     to: "carbontxt"
     grouping:
       type: LOCAL_OR_SHUFFLE
 
   - from: "header"
+    to: "status"
+    grouping:
+      type: FIELDS
+      args: ["url"]
+      streamId: "status"
+
+  - from: "dns"
     to: "status"
     grouping:
       type: FIELDS

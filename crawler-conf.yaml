@@ -110,6 +110,8 @@ config:
   # How to convert metadata key values into fields for indexing
   indexer.md.mapping:
   - carbontxt.method=method
+  - carbontxt.hostname=hostname
+  - carbontxt.content=content
 
   # Metrics consumers:
   topology.metrics.consumer.register:

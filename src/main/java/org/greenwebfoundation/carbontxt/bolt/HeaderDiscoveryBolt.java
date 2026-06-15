@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package org.greenwebfoundation.carbontxt.bolt;
 
 import org.apache.storm.task.OutputCollector;
@@ -57,18 +59,18 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
         Metadata metadata =
                 (Metadata) tuple.getValueByField("metadata");
 
-        URL sourceURL;
-        try {
-            sourceURL = URLUtil.toURL(url);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
-
         // Look in HTTP headers metadata for CarbonTxt-Location (case-insensitive)
         String expectedKey = (protocolMetadataPrefix + "carbontxt-location").toLowerCase(Locale.ROOT);
         String carbonTxtLocation = metadata.getFirstValue(expectedKey);
         if (carbonTxtLocation != null) {
             LOG.info("Found match in http header for {} : {}", url, carbonTxtLocation);
+            URL sourceURL;
+            try {
+                sourceURL = URLUtil.toURL(url);
+            } catch (MalformedURLException e) {
+                // should not happen
+                throw new RuntimeException(e);
+            }
             Outlink ol = filterOutlink(sourceURL, carbonTxtLocation, metadata);
             // override the value
             if (ol != null) {
