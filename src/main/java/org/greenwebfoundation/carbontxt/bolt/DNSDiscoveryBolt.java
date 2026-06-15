@@ -26,6 +26,7 @@ import static org.greenwebfoundation.carbontxt.MetadataKeys.HOSTNAME;
 import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
 
 /**
+ * Get tuples from the status stream
  * Look for DNS TXT record in the format carbon-txt-location=URL
  * The latter is tried only for seeds with method value = root
  * Writes the newly discovered URLs to the status stream as usual.
@@ -36,23 +37,11 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
     private static final String _s = org.apache.stormcrawler.Constants.StatusStreamName;
 
     @Override
-    public void prepare(Map<String, Object> conf, TopologyContext topologyContext, OutputCollector outputCollector) {
-        super.prepare(conf, topologyContext, outputCollector);
-    }
-
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        super.declareOutputFields(declarer);
-        // Default stream passes non-carbon.txt tuples to the parser bolt
-        declarer.declare(new Fields("url", "content", "metadata"));
-    }
-
-    @Override
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
         Metadata metadata =
                 (Metadata) tuple.getValueByField("metadata");
-        byte[] content = tuple.getBinaryByField("content");
+        Status status = (Status) tuple.getValueByField("status");
 
         // get the hostname from the metadata
         final String method = metadata.getFirstValue(METHOD);
@@ -61,6 +50,9 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
         // don't want to trigger this more than once per hostname
         // do it only when the seed has method root
         if ("root".equalsIgnoreCase(method) && hostname != null) {
+
+            LOG.info("Checking in DNS record for {}", url);
+
             try {
                 Lookup lookup = new Lookup(hostname, Type.TXT);
                 Record[] records = lookup.run();
@@ -96,7 +88,7 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
         }
 
         // pass it on
-        collector.emit(tuple, new Values(url, content, metadata));
+        collector.emit(_s, tuple, new Values(url, metadata, status));
         collector.ack(tuple);
     }
 

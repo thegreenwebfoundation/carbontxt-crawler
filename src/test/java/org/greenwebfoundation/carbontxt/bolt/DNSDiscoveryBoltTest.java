@@ -14,14 +14,13 @@ import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
 import static org.greenwebfoundation.carbontxt.MetadataKeys.HOSTNAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -80,27 +79,22 @@ class DNSDiscoveryBoltTest {
         Tuple input = mock(Tuple.class);
         when(input.getStringByField("url")).thenReturn(TEST_INPUT_URL);
         
-        byte[] contentBytes = "dummy content".getBytes(StandardCharsets.UTF_8);
-        when(input.getBinaryByField("content")).thenReturn(contentBytes);
-
         Metadata metadata = new Metadata();
         metadata.setValue(METHOD, "root");
         metadata.setValue(HOSTNAME, "example.com"); // example.com typically has no carbon-txt-location TXT record
         when(input.getValueByField("metadata")).thenReturn(metadata);
+        when(input.getValueByField("status")).thenReturn(Status.FETCHED);
 
         bolt.execute(input);
 
-        // Verify no status stream emissions since no matching record was found
-        verify(collector, never()).emit(eq("status"), any(Tuple.class), any(Values.class));
-
-        // Verify emit of original url on default stream
+        // Verify only ONE emit on "status" stream passing original url through
         ArgumentCaptor<Values> valuesCaptor = ArgumentCaptor.forClass(Values.class);
-        verify(collector).emit(eq(input), valuesCaptor.capture());
+        verify(collector, times(1)).emit(eq("status"), eq(input), valuesCaptor.capture());
         
         Values values = valuesCaptor.getValue();
         assertEquals(TEST_INPUT_URL, values.get(0));
-        assertArrayEquals(contentBytes, (byte[]) values.get(1));
-        assertEquals(metadata, values.get(2));
+        assertEquals(metadata, values.get(1));
+        assertEquals(Status.FETCHED, values.get(2));
 
         // Verify ack
         verify(collector).ack(input);
@@ -111,13 +105,11 @@ class DNSDiscoveryBoltTest {
         Tuple input = mock(Tuple.class);
         when(input.getStringByField("url")).thenReturn(TEST_INPUT_URL);
         
-        byte[] contentBytes = "digital pebble content".getBytes(StandardCharsets.UTF_8);
-        when(input.getBinaryByField("content")).thenReturn(contentBytes);
-
         Metadata metadata = new Metadata();
         metadata.setValue(METHOD, "root");
         metadata.setValue(HOSTNAME, "digitalpebble.com");
         when(input.getValueByField("metadata")).thenReturn(metadata);
+        when(input.getValueByField("status")).thenReturn(Status.FETCHED);
 
         // Mock the outlink returned by filterOutlink
         Outlink mockOutlink = mock(Outlink.class);
@@ -138,23 +130,24 @@ class DNSDiscoveryBoltTest {
         // Verify outlink metadata got method=dns
         assertEquals("dns", outlinkMetadata.getFirstValue(METHOD));
 
-        // Verify emit of discovered outlink to status stream
-        ArgumentCaptor<Values> statusValuesCaptor = ArgumentCaptor.forClass(Values.class);
-        verify(collector).emit(eq("status"), eq(input), statusValuesCaptor.capture());
+        // Verify TWO emits on "status" stream (discovered outlink first, then original url)
+        ArgumentCaptor<Values> valuesCaptor = ArgumentCaptor.forClass(Values.class);
+        verify(collector, times(2)).emit(eq("status"), eq(input), valuesCaptor.capture());
         
-        Values statusValues = statusValuesCaptor.getValue();
-        assertEquals("https://digitalpebble.com/carbon.txt", statusValues.get(0));
-        assertEquals(outlinkMetadata, statusValues.get(1));
-        assertEquals(Status.DISCOVERED, statusValues.get(2));
+        List<Values> allValues = valuesCaptor.getAllValues();
+        assertEquals(2, allValues.size());
 
-        // Verify emit of original url on default stream
-        ArgumentCaptor<Values> defaultValuesCaptor = ArgumentCaptor.forClass(Values.class);
-        verify(collector).emit(eq(input), defaultValuesCaptor.capture());
-        
-        Values defaultValues = defaultValuesCaptor.getValue();
-        assertEquals(TEST_INPUT_URL, defaultValues.get(0));
-        assertArrayEquals(contentBytes, (byte[]) defaultValues.get(1));
-        assertEquals(metadata, defaultValues.get(2));
+        // First emit: discovered outlink
+        Values firstEmit = allValues.get(0);
+        assertEquals("https://digitalpebble.com/carbon.txt", firstEmit.get(0));
+        assertEquals(outlinkMetadata, firstEmit.get(1));
+        assertEquals(Status.DISCOVERED, firstEmit.get(2));
+
+        // Second emit: original url
+        Values secondEmit = allValues.get(1);
+        assertEquals(TEST_INPUT_URL, secondEmit.get(0));
+        assertEquals(metadata, secondEmit.get(1));
+        assertEquals(Status.FETCHED, secondEmit.get(2));
 
         // Verify ack
         verify(collector).ack(input);
@@ -164,6 +157,6 @@ class DNSDiscoveryBoltTest {
     void testDeclareOutputFields() {
         org.apache.storm.topology.OutputFieldsDeclarer declarer = mock(org.apache.storm.topology.OutputFieldsDeclarer.class);
         bolt.declareOutputFields(declarer);
-        verify(declarer).declare(any(Fields.class));
+        verify(declarer).declareStream(eq("status"), any(Fields.class));
     }
 }

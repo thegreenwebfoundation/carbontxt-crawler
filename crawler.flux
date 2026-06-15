@@ -54,54 +54,47 @@ streams:
       args: ["key"]
 
   - from: "fetcher"
-    to: "header"
-    grouping:
-      type: LOCAL_OR_SHUFFLE
-
-  - from: "header"
-    to: "dns"
-    grouping:
-      type: LOCAL_OR_SHUFFLE
-
-  - from: "dns"
     to: "carbontxt"
     grouping:
       type: LOCAL_OR_SHUFFLE
-
-  - from: "header"
-    to: "status"
-    grouping:
-      type: FIELDS
-      args: ["url"]
-      streamId: "status"
-
-  - from: "dns"
-    to: "status"
-    grouping:
-      type: FIELDS
-      args: ["url"]
-      streamId: "status"
-
-  - from: "carbontxt"
-    to: "status"
-    grouping:
-      type: FIELDS
-      args: ["url"]
-      streamId: "status"
 
   - from: "carbontxt"
     to: "index"
     grouping:
       type: LOCAL_OR_SHUFFLE
 
-  - from: "fetcher"
+  - from: "header"
     to: "status"
     grouping:
       type: FIELDS
       args: ["url"]
       streamId: "status"
 
+  - from: "carbontxt"
+    to: "header"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+      streamId: "status"
+
+  - from: "fetcher"
+    to: "header"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+      streamId: "status"
+
   - from: "index"
+    to: "header"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+      streamId: "status"
+
+  - from: "header"
+    to: "dns"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+      streamId: "status"
+
+  - from: "dns"
     to: "status"
     grouping:
       type: FIELDS

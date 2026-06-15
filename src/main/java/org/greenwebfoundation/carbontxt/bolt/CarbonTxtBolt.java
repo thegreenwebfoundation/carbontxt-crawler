@@ -23,6 +23,7 @@ import java.util.Map;
 import static org.greenwebfoundation.carbontxt.MetadataKeys.*;
 
 /**
+ * Triggered only if a document has been fetched.
  * Checks that the document is a valid toml and if so send it for indexing
  * otherwise, update its status as error
  */

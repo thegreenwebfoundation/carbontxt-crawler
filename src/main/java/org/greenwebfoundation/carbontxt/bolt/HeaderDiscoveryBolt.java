@@ -26,6 +26,7 @@ import java.util.Map;
 import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
 
 /**
+ * Listens to tuples on the status stream
  * Looks for `CarbonTxt-Location: URL` in the HTTP header.
  * Writes the newly discovered URLs to the status stream as usual.
  **/
@@ -47,18 +48,13 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
     }
 
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        super.declareOutputFields(declarer);
-        // Default stream passes non-carbon.txt tuples to the parser bolt
-        declarer.declare(new Fields("url", "content", "metadata"));
-    }
-
-    @Override
     public void execute(Tuple tuple) {
         String url = tuple.getStringByField("url");
         Metadata metadata =
                 (Metadata) tuple.getValueByField("metadata");
-        byte[] content = tuple.getBinaryByField("content");
+        Status status = (Status) tuple.getValueByField("status");
+
+        LOG.info("Checking in http header for {}", url);
 
         // Look in HTTP headers metadata for CarbonTxt-Location (case-insensitive)
         String expectedKey = (protocolMetadataPrefix + "carbontxt-location").toLowerCase(Locale.ROOT);
@@ -80,7 +76,8 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
             }
         }
 
-        collector.emit(tuple, new Values(url, content, metadata));
+        // pass it on
+        collector.emit(_s, tuple, new Values(url, metadata, status));
         collector.ack(tuple);
     }
 
