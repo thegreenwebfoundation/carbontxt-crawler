@@ -82,7 +82,7 @@ public class CarbonTxtBolt extends BaseRichBolt {
         // nothing we want to do with it if invalid - just pass to status stream
         if (!valid) {
             LOG.info("Invalid carbon.txt at {}", url);
-            collector.emit("status", input, new Values(url, metadata, Status.ERROR));
+            collector.emit(_s, input, new Values(url, metadata, Status.ERROR));
             collector.ack(input);
             return;
         }

@@ -25,6 +25,9 @@ bolts:
   - id: "fetcher"
     className: "org.apache.stormcrawler.bolt.FetcherBolt"
     parallelism: 1
+  - id: "header"
+    className: "org.greenwebfoundation.carbontxt.bolt.HeaderDiscoveryBolt"
+    parallelism: 1
   - id: "carbontxt"
     className: "org.greenwebfoundation.carbontxt.bolt.CarbonTxtBolt"
     parallelism: 1
@@ -47,10 +50,22 @@ streams:
       type: FIELDS
       args: ["key"]
 
-  - from: "fetcher"
+   - from: "fetcher"
+     to: "header"
+     grouping:
+       type: LOCAL_OR_SHUFFLE
+
+  - from: "header"
     to: "carbontxt"
     grouping:
       type: LOCAL_OR_SHUFFLE
+
+  - from: "header"
+    to: "status"
+    grouping:
+      type: FIELDS
+      args: ["url"]
+      streamId: "status"
 
   - from: "carbontxt"
     to: "status"
