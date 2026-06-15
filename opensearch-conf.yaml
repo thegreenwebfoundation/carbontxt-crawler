@@ -20,8 +20,8 @@ config:
   # address to use unless a more specific one has been
   # defined for a component
   # also accepts a list or multiple values in a single line
-  # separated by a semi-colon e.g. "opensearch1:9200; opensearch2:9200"
-  opensearch.addresses: "localhost:9200; localhost:9201"
+  # separated by a semi-colon e.g. "localhost:9200; localhost:9201"
+  opensearch.addresses: "opensearch-node1:9200; opensearch-node2:9200"
   #opensearch.user: "USERNAME"
   #opensearch.password: "PASSWORD"
   opensearch.concurrentRequests: 2
@@ -32,7 +32,7 @@ config:
   # Indexer bolt
   # addresses can be specified as a full URL
   # if not we assume that the protocol is http and the port 9200
-  opensearch.indexer.addresses: "localhost"
+  # opensearch.indexer.addresses: "localhost"
   opensearch.indexer.index.name: "content"
   # opensearch.indexer.pipeline: "_PIPELINE_"
   opensearch.indexer.create: false

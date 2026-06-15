@@ -53,10 +53,10 @@ streams:
       type: FIELDS
       args: ["key"]
 
-   - from: "fetcher"
-     to: "header"
-     grouping:
-       type: LOCAL_OR_SHUFFLE
+  - from: "fetcher"
+    to: "header"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
 
   - from: "header"
     to: "dns"

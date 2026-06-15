@@ -1,7 +1,28 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.greenwebfoundation.carbontxt.bolt;
 
+import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
+import static org.greenwebfoundation.carbontxt.MetadataKeys.HOSTNAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Fields;
@@ -14,18 +35,6 @@ import org.apache.stormcrawler.protocol.ProtocolResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.greenwebfoundation.carbontxt.MetadataKeys.HOSTNAME;
-import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 class DNSDiscoveryBoltTest {
 
@@ -71,6 +80,9 @@ class DNSDiscoveryBoltTest {
         Tuple input = mock(Tuple.class);
         when(input.getStringByField("url")).thenReturn(TEST_INPUT_URL);
         
+        byte[] contentBytes = "dummy content".getBytes(StandardCharsets.UTF_8);
+        when(input.getBinaryByField("content")).thenReturn(contentBytes);
+
         Metadata metadata = new Metadata();
         metadata.setValue(METHOD, "root");
         metadata.setValue(HOSTNAME, "example.com"); // example.com typically has no carbon-txt-location TXT record
@@ -81,14 +93,14 @@ class DNSDiscoveryBoltTest {
         // Verify no status stream emissions since no matching record was found
         verify(collector, never()).emit(eq("status"), any(Tuple.class), any(Values.class));
 
-        // Verify emit of original url with FETCHED status
+        // Verify emit of original url on default stream
         ArgumentCaptor<Values> valuesCaptor = ArgumentCaptor.forClass(Values.class);
         verify(collector).emit(eq(input), valuesCaptor.capture());
         
         Values values = valuesCaptor.getValue();
         assertEquals(TEST_INPUT_URL, values.get(0));
-        assertEquals(metadata, values.get(1));
-        assertEquals(Status.FETCHED, values.get(2));
+        assertArrayEquals(contentBytes, (byte[]) values.get(1));
+        assertEquals(metadata, values.get(2));
 
         // Verify ack
         verify(collector).ack(input);
@@ -99,6 +111,9 @@ class DNSDiscoveryBoltTest {
         Tuple input = mock(Tuple.class);
         when(input.getStringByField("url")).thenReturn(TEST_INPUT_URL);
         
+        byte[] contentBytes = "digital pebble content".getBytes(StandardCharsets.UTF_8);
+        when(input.getBinaryByField("content")).thenReturn(contentBytes);
+
         Metadata metadata = new Metadata();
         metadata.setValue(METHOD, "root");
         metadata.setValue(HOSTNAME, "digitalpebble.com");
@@ -132,14 +147,14 @@ class DNSDiscoveryBoltTest {
         assertEquals(outlinkMetadata, statusValues.get(1));
         assertEquals(Status.DISCOVERED, statusValues.get(2));
 
-        // Verify emit of original url with FETCHED status on default stream
+        // Verify emit of original url on default stream
         ArgumentCaptor<Values> defaultValuesCaptor = ArgumentCaptor.forClass(Values.class);
         verify(collector).emit(eq(input), defaultValuesCaptor.capture());
         
         Values defaultValues = defaultValuesCaptor.getValue();
         assertEquals(TEST_INPUT_URL, defaultValues.get(0));
-        assertEquals(metadata, defaultValues.get(1));
-        assertEquals(Status.FETCHED, defaultValues.get(2));
+        assertArrayEquals(contentBytes, (byte[]) defaultValues.get(1));
+        assertEquals(metadata, defaultValues.get(2));
 
         // Verify ack
         verify(collector).ack(input);

@@ -52,6 +52,7 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
         String url = tuple.getStringByField("url");
         Metadata metadata =
                 (Metadata) tuple.getValueByField("metadata");
+        byte[] content = tuple.getBinaryByField("content");
 
         // get the hostname from the metadata
         final String method = metadata.getFirstValue(METHOD);
@@ -94,7 +95,7 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
         }
 
         // pass it on
-        collector.emit(tuple, new Values(url, metadata, Status.FETCHED));
+        collector.emit(tuple, new Values(url, content, metadata));
         collector.ack(tuple);
     }
 
