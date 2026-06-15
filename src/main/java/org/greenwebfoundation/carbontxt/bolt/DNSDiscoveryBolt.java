@@ -60,30 +60,31 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
 
         // don't want to trigger this more than once per hostname
         // do it only when the seed has method root
-        if ("root".equalsIgnoreCase(method) && hostname != null){
+        if ("root".equalsIgnoreCase(method) && hostname != null) {
             try {
                 Lookup lookup = new Lookup(hostname, Type.TXT);
                 Record[] records = lookup.run();
-                for (Record record : records) {
-                    if (record instanceof TXTRecord) {
-                        TXTRecord txt = (TXTRecord) record;
-                        for (String str : txt.getStrings()) {
-                            String key = "carbon-txt-location=";
-                            if (str.startsWith(key)) {
-                                String value = str.substring(key.length());
-                                LOG.info("Found match in DNS TXT record for {} : {}", url, value);
-                                URL sourceURL;
-                                try {
-                                    sourceURL = URLUtil.toURL(url);
-                                } catch (MalformedURLException e) {
-                                    // should not happen
-                                    throw new RuntimeException(e);
-                                }
-                                Outlink ol = filterOutlink(sourceURL, value, metadata);
-                                // override the value
-                                if (ol != null) {
-                                    ol.getMetadata().setValue(METHOD, "dns");
-                                    collector.emit(_s, tuple, new Values(new Object[]{ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED}));
+                if (records != null) {
+                    for (Record record : records) {
+                        if (record instanceof TXTRecord txt) {
+                            for (String str : txt.getStrings()) {
+                                String key = "carbon-txt-location=";
+                                if (str.startsWith(key)) {
+                                    String value = str.substring(key.length());
+                                    LOG.info("Found match in DNS TXT record for {} : {}", url, value);
+                                    URL sourceURL;
+                                    try {
+                                        sourceURL = URLUtil.toURL(url);
+                                    } catch (MalformedURLException e) {
+                                        // should not happen
+                                        throw new RuntimeException(e);
+                                    }
+                                    Outlink ol = filterOutlink(sourceURL, value, metadata);
+                                    // override the value
+                                    if (ol != null) {
+                                        ol.getMetadata().setValue(METHOD, "dns");
+                                        collector.emit(_s, tuple, new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED));
+                                    }
                                 }
                             }
                         }

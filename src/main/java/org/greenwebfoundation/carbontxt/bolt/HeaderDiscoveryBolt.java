@@ -58,6 +58,7 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
         String url = tuple.getStringByField("url");
         Metadata metadata =
                 (Metadata) tuple.getValueByField("metadata");
+        byte[] content = tuple.getBinaryByField("content");
 
         // Look in HTTP headers metadata for CarbonTxt-Location (case-insensitive)
         String expectedKey = (protocolMetadataPrefix + "carbontxt-location").toLowerCase(Locale.ROOT);
@@ -75,11 +76,11 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
             // override the value
             if (ol != null) {
                 ol.getMetadata().setValue(METHOD, "http");
-                collector.emit(_s, tuple, new Values(new Object[]{ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED}));
+                collector.emit(_s, tuple, new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED));
             }
         }
 
-        collector.emit(tuple, new Values(url, metadata, Status.FETCHED));
+        collector.emit(tuple, new Values(url, content, metadata));
         collector.ack(tuple);
     }
 

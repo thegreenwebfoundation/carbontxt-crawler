@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
 
-import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayInputStream;
 import java.util.Base64;
 import java.util.Map;
 
@@ -36,7 +36,7 @@ public class CarbonTxtBolt extends BaseRichBolt {
 
     @Override
     public void prepare(Map<String, Object> map, TopologyContext topologyContext, OutputCollector outputCollector) {
-        collector= outputCollector;
+        collector = outputCollector;
     }
 
     @Override
@@ -54,22 +54,20 @@ public class CarbonTxtBolt extends BaseRichBolt {
             metadata.addValue(ERRORS, "Empty content");
         }
 
-        if (valid){
-        String text = new String(content, StandardCharsets.UTF_8);
+        if (valid) {
+            TomlParseResult toml = null;
+            try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content)) {
+                toml = Toml.parse(byteArrayInputStream);
+            } catch (Exception e) {
+                valid = false;
+                LOG.debug("Failed to parse TOML for {}: {}", url, e.getMessage());
+                metadata.addValue(ERRORS, "Invalid TOML: " + e.getMessage());
+            }
 
-        TomlParseResult toml = null;
-        try {
-            toml = Toml.parse(text);
-        } catch (Exception e) {
-            valid = false;
-            LOG.debug("Failed to parse TOML for {}: {}", url, e.getMessage());
-            metadata.addValue(ERRORS, "Invalid TOML: " + e.getMessage());
-        }
-
-        if (toml != null && toml.hasErrors()) {
-            valid = false;
-            toml.errors().forEach(error -> metadata.addValue(ERRORS, error.toString()));
-        }
+            if (toml != null && toml.hasErrors()) {
+                valid = false;
+                toml.errors().forEach(error -> metadata.addValue(ERRORS, error.toString()));
+            }
         }
 
         // store content as base64
@@ -87,7 +85,8 @@ public class CarbonTxtBolt extends BaseRichBolt {
             return;
         }
 
-        // Emit the carbon.txt document itself to the status stream as FETCHED
+        // Send the document for indexing
+        LOG.info("Valid carbon.txt at {}", url);
         collector.emit(input, new Values(url, content, metadata));
         collector.ack(input);
     }

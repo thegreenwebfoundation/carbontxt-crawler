@@ -5,8 +5,6 @@ services:
     restart: always
     ports:
       - "127.0.0.1:2181:2181"
-    networks:
-      - opencrawl
 
   nimbus:
     image: storm:2.8.8
@@ -17,8 +15,6 @@ services:
     restart: always
     volumes:
       - storm-nimbus-logs:/logs
-    networks:
-      - opencrawl
 
   supervisor:
     image: storm:2.8.8
@@ -30,8 +26,6 @@ services:
     restart: always
     volumes:
       - storm-supervisor-logs:/logs
-    networks:
-      - opencrawl
 
   ui:
     image: storm:2.8.8
@@ -44,8 +38,6 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - storm-ui-logs:/logs
-    networks:
-      - opencrawl
 
   opensearch-node1: # This is also the hostname of the container within the Docker network (i.e. https://opensearch-node1/)
     image: opensearchproject/opensearch:2.19.5 # Specifying the latest available image - modify if you want a specific version
@@ -72,8 +64,6 @@ services:
       - 9200:9200 # REST API
       - 9600:9600 # Performance Analyzer
     # restart: always
-    networks:
-      - opencrawl
 
   opensearch-node2:
     image: opensearchproject/opensearch:2.19.5 # This should be the same image used for opensearch-node1 to avoid issues
@@ -99,8 +89,6 @@ services:
     ports:
       - 9201:9200 # REST API
     # restart: always
-    networks:
-      - opencrawl
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2.19.5 # Make sure the version of opensearch-dashboards matches the version of opensearch installed on other nodes
@@ -114,8 +102,6 @@ services:
       - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true" # disables security dashboards plugin in OpenSearch Dashboards
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
     # restart: always
-    networks:
-      - opencrawl
 
 volumes:
   opensearch-data1:
@@ -128,6 +114,3 @@ volumes:
     driver: local
   storm-supervisor-logs:
     driver: local
-
-networks:
-  opencrawl:

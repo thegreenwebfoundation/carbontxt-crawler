@@ -2,15 +2,6 @@
 
 package org.greenwebfoundation.carbontxt.bolt;
 
-import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Fields;
@@ -23,6 +14,16 @@ import org.apache.stormcrawler.protocol.ProtocolResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 class HeaderDiscoveryBoltTest {
 
@@ -81,8 +82,7 @@ class HeaderDiscoveryBoltTest {
         
         Values values = valuesCaptor.getValue();
         assertEquals("https://example.com/", values.get(0));
-        assertEquals(metadata, values.get(1));
-        assertEquals(Status.FETCHED, values.get(2));
+        assertEquals(metadata, values.get(2));
 
         // Verify ack
         verify(collector).ack(input);
@@ -131,8 +131,7 @@ class HeaderDiscoveryBoltTest {
         
         Values defaultValues = defaultValuesCaptor.getValue();
         assertEquals("https://example.com/", defaultValues.get(0));
-        assertEquals(metadata, defaultValues.get(1));
-        assertEquals(Status.FETCHED, defaultValues.get(2));
+        assertEquals(metadata, defaultValues.get(2));
 
         // Verify ack
         verify(collector).ack(input);
@@ -161,9 +160,7 @@ class HeaderDiscoveryBoltTest {
         
         Values values = valuesCaptor.getValue();
         assertEquals("https://example.com/", values.get(0));
-        assertEquals(metadata, values.get(1));
-        assertEquals(Status.FETCHED, values.get(2));
-
+        assertEquals(metadata, values.get(2));
         // Verify ack
         verify(collector).ack(input);
     }
