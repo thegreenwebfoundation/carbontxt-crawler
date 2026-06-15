@@ -87,7 +87,7 @@ class CarbonTxtBoltTest {
         // Verify metadata values
         assertEquals("false", metadata.getFirstValue(VALID));
         String expectedBase64 = Base64.getEncoder().encodeToString(contentBytes);
-        assertEquals(expectedBase64, metadata.getFirstValue(CONTENT));
+        assertNull(metadata.getFirstValue(CONTENT));
         
         String[] errors = metadata.getValues(ERRORS);
         assertNotNull(errors);
@@ -122,7 +122,7 @@ class CarbonTxtBoltTest {
 
         // Verify metadata values
         assertEquals("false", metadata.getFirstValue(VALID));
-        assertEquals("", metadata.getFirstValue(CONTENT));
+        assertNull(metadata.getFirstValue(CONTENT));
         
         String[] errors = metadata.getValues(ERRORS);
         assertNotNull(errors);

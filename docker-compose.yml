@@ -5,6 +5,10 @@ services:
     restart: always
     ports:
       - "127.0.0.1:2181:2181"
+    volumes:
+      - zk-logs:/logs
+      - zk-data:/data
+      - zk-datalog:/datalog
 
   nimbus:
     image: storm:2.8.8
@@ -105,12 +109,10 @@ services:
 
 volumes:
   opensearch-data1:
-    driver: local
   opensearch-data2:
-    driver: local
   storm-ui-logs:
-    driver: local
   storm-nimbus-logs:
-    driver: local
   storm-supervisor-logs:
-    driver: local
+  zk-logs:
+  zk-data:
+  zk-datalog:

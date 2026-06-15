@@ -70,11 +70,6 @@ public class CarbonTxtBolt extends BaseRichBolt {
             }
         }
 
-        // store content as base64
-        // it is declared as type binary in schema
-        byte[] encodedBytes = Base64.getEncoder().encode(content);
-        metadata.setValue(CONTENT, new String(encodedBytes));
-
         metadata.setValue(VALID, Boolean.toString(valid));
 
         // nothing we want to do with it if invalid - just pass to status stream
@@ -87,6 +82,10 @@ public class CarbonTxtBolt extends BaseRichBolt {
 
         // Send the document for indexing
         LOG.info("Valid carbon.txt at {}", url);
+        // store content as base64
+        // it is declared as type binary in schema
+        byte[] encodedBytes = Base64.getEncoder().encode(content);
+        metadata.setValue(CONTENT, new String(encodedBytes));
         collector.emit(input, new Values(url, content, metadata));
         collector.ack(input);
     }
