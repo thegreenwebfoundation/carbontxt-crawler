@@ -104,8 +104,9 @@ config:
   # configuration for the classes extending AbstractIndexerBolt
   # indexer.md.filter: "carbontxt.valid=true"
   indexer.url.fieldname: "url"
-  indexer.text.fieldname: "content"
-  indexer.canonical.name: "canonical"
+  # don't want to index the text as there isn't one
+  indexer.text.fieldname: ""
+  indexer.canonical.name: ""
 
   # How to convert metadata key values into fields for indexing
   indexer.md.mapping:
