@@ -99,6 +99,7 @@ under the License.
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/services/java.net.spi.InetAddressResolverProvider</exclude>
                                     </excludes>
                                 </filter>
                                 <filter>
