@@ -19,7 +19,7 @@ spouts:
     parallelism: 1
     constructorArgs:
       - "."
-      - "hostnames"
+      - "hostnames.gz"
       - false
 
 bolts:

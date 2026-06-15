@@ -20,8 +20,8 @@ under the License.
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.carbontxt.crawler</groupId>
@@ -35,6 +35,7 @@ under the License.
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <stormcrawler.version>3.6.0</stormcrawler.version>
         <storm.version>2.8.8</storm.version>
+        <commons.compress.version>1.28.0</commons.compress.version>
     </properties>
 
     <build>
@@ -80,9 +81,9 @@ under the License.
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <transformers>
                                 <transformer
-                                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer
-                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.apache.storm.flux.Flux</mainClass>
                                     <manifestEntries>
                                         <Change></Change>
@@ -169,6 +170,11 @@ under the License.
             <groupId>dnsjava</groupId>
             <artifactId>dnsjava</artifactId>
             <version>3.6.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>${commons.compress.version}</version>
         </dependency>
     </dependencies>
 </project>
