@@ -34,6 +34,9 @@ bolts:
   - id: "carbontxt"
     className: "org.greenwebfoundation.carbontxt.bolt.CarbonTxtBolt"
     parallelism: 1
+  - id: "generator"
+    className: "org.greenwebfoundation.carbontxt.bolt.SeedGenerator"
+    parallelism: 1
   - id: "index"
     className: "org.apache.stormcrawler.opensearch.bolt.IndexerBolt"
     parallelism: 1
@@ -95,6 +98,23 @@ streams:
       streamId: "status"
 
   - from: "dns"
+    to: "generator"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+
+  - from: "header"
+    to: "generator"
+    grouping:
+      type: LOCAL_OR_SHUFFLE
+
+  - from: "dns"
+    to: "status"
+    grouping:
+      type: FIELDS
+      args: ["url"]
+      streamId: "status"
+
+  - from: "generator"
     to: "status"
     grouping:
       type: FIELDS

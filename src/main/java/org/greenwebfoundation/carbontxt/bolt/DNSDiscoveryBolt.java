@@ -2,8 +2,7 @@
 
 package org.greenwebfoundation.carbontxt.bolt;
 
-import org.apache.storm.task.OutputCollector;
-import org.apache.storm.task.TopologyContext;
+import crawlercommons.domains.EffectiveTldFinder;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
@@ -20,7 +19,6 @@ import org.xbill.DNS.Record;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
 
 import static org.greenwebfoundation.carbontxt.MetadataKeys.HOSTNAME;
 import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
@@ -35,6 +33,11 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(DNSDiscoveryBolt.class);
     private static final String _s = org.apache.stormcrawler.Constants.StatusStreamName;
+
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        super.declareOutputFields(declarer);
+        declarer.declare(new Fields("url"));
+    }
 
     @Override
     public void execute(Tuple tuple) {
@@ -63,19 +66,31 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
                                 String key = "carbon-txt-location=";
                                 if (str.startsWith(key)) {
                                     String value = str.substring(key.length());
-                                    LOG.info("Found match in DNS TXT record for {} : {}", url, value);
-                                    URL sourceURL;
-                                    try {
-                                        sourceURL = URLUtil.toURL(url);
-                                    } catch (MalformedURLException e) {
-                                        // should not happen
-                                        throw new RuntimeException(e);
-                                    }
-                                    Outlink ol = filterOutlink(sourceURL, value, metadata);
-                                    // override the value
-                                    if (ol != null) {
-                                        ol.getMetadata().setValue(METHOD, "dns");
-                                        collector.emit(_s, tuple, new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED));
+                                    // check that the value is a valid URL
+                                    // if not, check whether it is a hostname
+                                    // in which case we'd trigger a new seed generation
+                                    if (value.startsWith("http")) {
+                                        LOG.info("Found URL in DNS TXT record for {} : {}", url, value);
+                                        URL sourceURL;
+                                        try {
+                                            sourceURL = URLUtil.toURL(url);
+                                        } catch (MalformedURLException e) {
+                                            // should not happen
+                                            throw new RuntimeException(e);
+                                        }
+                                        Outlink ol = filterOutlink(sourceURL, value, metadata);
+                                        // override the value
+                                        if (ol != null) {
+                                            ol.getMetadata().setValue(METHOD, "dns");
+                                            collector.emit(_s, tuple, new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED));
+                                        }
+                                    } else {
+                                        String domain = EffectiveTldFinder.getAssignedDomain(value, true); // strict=true
+                                        if (domain != null) {
+                                            // pass the domain to the seed generator
+                                            LOG.info("Found domain in DNS TXT record for {} : {}", url, value);
+                                            collector.emit(tuple, new Values(value));
+                                        }
                                     }
                                 }
                             }
