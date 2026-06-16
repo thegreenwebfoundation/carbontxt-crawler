@@ -18,7 +18,7 @@ spouts:
     className: "org.apache.stormcrawler.spout.FileSpout"
     parallelism: 1
     constructorArgs:
-      - "."
+      - "/mnt"
       - "hostnames.gz"
       - false
 
@@ -41,9 +41,6 @@ streams:
   - from: "generator"
     to: "status"
     grouping:
+      type: FIELDS
+      args: ["url"]
       streamId: "status"
-      type: CUSTOM
-      customClass:
-        className: "org.apache.stormcrawler.util.URLStreamGrouping"
-        constructorArgs:
-          - "byDomain"

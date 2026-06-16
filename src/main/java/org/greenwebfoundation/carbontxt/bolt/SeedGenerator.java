@@ -48,7 +48,7 @@ public class SeedGenerator extends BaseRichBolt {
         // a hostname though but it does not matter really
         String hostname = input.getStringByField("url");
 
-        LOG.info("Generating seeds for {}", hostname);
+        LOG.debug("Generating seeds for {}", hostname);
 
         // generate 2 candidate URLs for carbon.txt
         // assume a https prefix

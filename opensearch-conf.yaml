@@ -21,7 +21,7 @@ config:
   # defined for a component
   # also accepts a list or multiple values in a single line
   # separated by a semi-colon e.g. "localhost:9200; localhost:9201"
-  opensearch.addresses: "opensearch-node1:9200; opensearch-node2:9200"
+  opensearch.addresses: "opensearch-node1:9200"
   #opensearch.user: "USERNAME"
   #opensearch.password: "PASSWORD"
   opensearch.concurrentRequests: 2
@@ -57,8 +57,8 @@ config:
   # needed by the spout implementations
   # also used for routing if the value above is set to true
   opensearch.status.routing.fieldname: "key"
-  opensearch.status.bulkActions: 500
-  opensearch.status.flushInterval: "2s"
+  opensearch.status.bulkActions: 1000
+  opensearch.status.flushInterval: "1s"
   # opensearch.status.concurrentRequests: 1
   opensearch.status.sniff: false
 
@@ -83,7 +83,7 @@ config:
   # results might be returned.
   spout.reset.fetchdate.after: 120
 
-  opensearch.status.max.buckets: 50
+  opensearch.status.max.buckets: 1000
   opensearch.status.max.urls.per.bucket: 2
   # field to group the URLs into buckets
   opensearch.status.bucket.field: "key"
@@ -104,6 +104,8 @@ config:
   # use it as nextFetchDate
   opensearch.status.recentDate.increase: -1
   opensearch.status.recentDate.min.gap: -1
+
+  status.updater.use.cache: false
 
   topology.metrics.consumer.register:
        - class: "org.apache.stormcrawler.opensearch.metrics.MetricsConsumer"

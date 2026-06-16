@@ -17,14 +17,26 @@
 
 package org.apache.stormcrawler.spout;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Queue;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -41,8 +53,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * NOTE : replace with standard class from SC as soon as the zip support is available
- *
  * Reads the lines from a UTF-8 file and use them as a spout. The spout reads files in chunks of
  * 10,000 lines, keeping memory usage very low even for extremely large files with millions of seed
  * URLs. Uses StringTabScheme to parse the lines into URLs and Metadata, generates tuples on the
@@ -52,14 +62,17 @@ public class FileSpout extends BaseRichSpout {
 
     public static final int BATCH_SIZE = 10000;
     public static final Logger LOG = LoggerFactory.getLogger(FileSpout.class);
-    private final Queue<String> inputFiles;
-    protected SpoutOutputCollector collector;
+    private String dir;
+    private String filter;
+    private String[] files;
+    private transient Queue<String> inputFiles;
+    protected transient SpoutOutputCollector collector;
     protected Scheme scheme = new StringTabScheme();
     protected LinkedList<byte[]> buffer = new LinkedList<>();
     protected boolean active;
     protected int totalTasks;
     protected int taskIndex;
-    private BufferedReader currentBuffer;
+    private transient BufferedReader currentBuffer;
     private boolean withDiscoveredStatus = false;
 
     /**
@@ -86,18 +99,8 @@ public class FileSpout extends BaseRichSpout {
      */
     public FileSpout(String dir, String filter, boolean withDiscoveredStatus) {
         this.withDiscoveredStatus = withDiscoveredStatus;
-        Path pdir = Paths.get(dir);
-        inputFiles = new LinkedList<>();
-        LOG.info("Reading directory: {} (filter: {})", pdir, filter);
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir, filter)) {
-            for (Path entry : stream) {
-                String inputFile = entry.toAbsolutePath().toString();
-                inputFiles.add(inputFile);
-                LOG.info("Input : {}", inputFile);
-            }
-        } catch (IOException ioe) {
-            LOG.error("IOException: %s%n", ioe);
-        }
+        this.dir = dir;
+        this.filter = filter;
     }
 
     /**
@@ -111,8 +114,7 @@ public class FileSpout extends BaseRichSpout {
         if (files.length == 0) {
             throw new IllegalArgumentException("Must configure at least one inputFile");
         }
-        inputFiles = new LinkedList<>();
-        Collections.addAll(inputFiles, files);
+        this.files = files;
     }
 
     /**
@@ -134,7 +136,7 @@ public class FileSpout extends BaseRichSpout {
             Path inputPath = Paths.get(file);
             InputStream is = new BufferedInputStream(new FileInputStream(inputPath.toFile()));
             try {
-                String fileLower = file.toLowerCase();
+                String fileLower = file.toLowerCase(Locale.ROOT);
                 if (fileLower.endsWith(".gz") || fileLower.endsWith(".gzip")) {
                     is = new GZIPInputStream(is);
                 } else if (fileLower.endsWith(".bz2")) {
@@ -157,17 +159,7 @@ public class FileSpout extends BaseRichSpout {
             if (line.startsWith("#")) {
                 continue;
             }
-            // check whether this entry should be skipped?
-            // totalTasks could be at 0 if a subclass forgot to
-            // call this classes open()
-            if (totalTasks == 0 || linesRead % totalTasks == taskIndex) {
-                LOG.debug(
-                        "Adding to buffer for spout {} -> line ({}) {}",
-                        taskIndex,
-                        linesRead,
-                        line);
-                buffer.add(line.trim().getBytes(StandardCharsets.UTF_8));
-            }
+            buffer.add(line.trim().getBytes(StandardCharsets.UTF_8));
             linesRead++;
         }
 
@@ -187,6 +179,31 @@ public class FileSpout extends BaseRichSpout {
         // same as the number of shards
         totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
         taskIndex = context.getThisTaskIndex();
+
+        this.inputFiles = new LinkedList<>();
+        List<String> allFiles = new ArrayList<>();
+
+        if (dir != null) {
+            Path pdir = Paths.get(dir);
+            LOG.info("Reading directory: {} (filter: {})", pdir, filter);
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir, filter)) {
+                for (Path entry : stream) {
+                    allFiles.add(entry.toAbsolutePath().toString());
+                }
+            } catch (IOException ioe) {
+                LOG.error("IOException: %s%n", ioe);
+            }
+        } else if (files != null) {
+            Collections.addAll(allFiles, files);
+        }
+
+        for (int i = 0; i < allFiles.size(); i++) {
+            if (i % totalTasks == taskIndex) {
+                String assignedFile = allFiles.get(i);
+                inputFiles.add(assignedFile);
+                LOG.info("Task {} assigned input file: {}", taskIndex, assignedFile);
+            }
+        }
     }
 
     @Override
