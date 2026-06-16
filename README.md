@@ -39,10 +39,12 @@ then once everything is up and running call
  dashboards/importDashboards.sh
 ```
 
-This populates the OpenSearch Dashboard running on [http://localhost:5601/]. When connecting for the first time, you might need to enter the 
+This populates the OpenSearch Dashboard running on http://localhost:5601/. When connecting for the first time, you might need to enter the 
 `OPENSEARCH_INITIAL_ADMIN_PASSWORD` specified above.
 
-Check that the Storm UI is up and running on [http://localhost:8080/].
+Check that the Storm UI is up and running on http://localhost:8080/.
+
+**NOTE** the OpenSearch setup is not configured to be secure, do not use it as-is for other purposes.
 
 # Hostnames
 
@@ -131,6 +133,11 @@ The [Storm UI](http://localhost:8080) can be used in combination with the [Metri
 
 The crawl keeps track of the method used to find the carbon.txt file (`root`, `well-known`,`dns`,`http`), in the event where a URL is found via more than one path, only the first one is tracked.
 
+**NOTE**
+
+Due to the large number of hostnames and the fact that the crawl queries for DNS records, it is important to use a fast and reliable DNS server (i.e. probably not the one from your internet provider).
+
+Google DNS (`8.8.8.8` and `8.8.4.4`) are free, robust and quite fast.
 
 ### Index reset
 
