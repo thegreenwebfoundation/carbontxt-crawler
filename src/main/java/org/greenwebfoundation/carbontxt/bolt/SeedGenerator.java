@@ -11,6 +11,8 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.apache.stormcrawler.Metadata;
 import org.apache.stormcrawler.persistence.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -27,6 +29,7 @@ import static org.greenwebfoundation.carbontxt.MetadataKeys.METHOD;
 
 public class SeedGenerator extends BaseRichBolt {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SeedGenerator.class);
     private static final String _s = org.apache.stormcrawler.Constants.StatusStreamName;
     protected OutputCollector collector;
 
@@ -44,6 +47,8 @@ public class SeedGenerator extends BaseRichBolt {
         // we get a url from the FileSpout - it is just a string to represent
         // a hostname though but it does not matter really
         String hostname = input.getStringByField("url");
+
+        LOG.info("Generating seeds for {}", hostname);
 
         // generate 2 candidate URLs for carbon.txt
         // assume a https prefix

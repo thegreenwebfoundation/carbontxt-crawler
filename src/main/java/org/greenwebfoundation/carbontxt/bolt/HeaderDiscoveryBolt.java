@@ -2,6 +2,7 @@
 
 package org.greenwebfoundation.carbontxt.bolt;
 
+import crawlercommons.domains.EffectiveTldFinder;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -38,6 +39,11 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
     // typically "protocol."
     private String protocolMetadataPrefix;
 
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        super.declareOutputFields(declarer);
+        declarer.declare(new Fields("url"));
+    }
+
     @Override
     public void prepare(Map<String, Object> conf, TopologyContext topologyContext, OutputCollector outputCollector) {
         super.prepare(conf, topologyContext, outputCollector);
@@ -60,19 +66,29 @@ public class HeaderDiscoveryBolt extends StatusEmitterBolt {
         String expectedKey = (protocolMetadataPrefix + "carbontxt-location").toLowerCase(Locale.ROOT);
         String carbonTxtLocation = metadata.getFirstValue(expectedKey);
         if (carbonTxtLocation != null) {
-            LOG.info("Found match in http header for {} : {}", url, carbonTxtLocation);
-            URL sourceURL;
-            try {
-                sourceURL = URLUtil.toURL(url);
-            } catch (MalformedURLException e) {
-                // should not happen
-                throw new RuntimeException(e);
+            if (carbonTxtLocation.startsWith("http")) {
+                LOG.info("Found URL in http header for {} : {}", url, carbonTxtLocation);
+                URL sourceURL;
+                try {
+                    sourceURL = URLUtil.toURL(url);
+                } catch (MalformedURLException e) {
+                    // should not happen
+                    throw new RuntimeException(e);
+                }
+                Outlink ol = filterOutlink(sourceURL, carbonTxtLocation, metadata);
+                // override the value
+                if (ol != null) {
+                    ol.getMetadata().setValue(METHOD, "http");
+                    collector.emit(_s, tuple, new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED));
+                }
             }
-            Outlink ol = filterOutlink(sourceURL, carbonTxtLocation, metadata);
-            // override the value
-            if (ol != null) {
-                ol.getMetadata().setValue(METHOD, "http");
-                collector.emit(_s, tuple, new Values(ol.getTargetURL(), ol.getMetadata(), Status.DISCOVERED));
+            else {
+                String domain = EffectiveTldFinder.getAssignedDomain(carbonTxtLocation, true); // strict=true
+                if (domain != null) {
+                    // pass the domain to the seed generator
+                    LOG.info("Found domain in http header for  {} : {}", url, carbonTxtLocation);
+                    collector.emit(tuple, new Values(carbonTxtLocation));
+                }
             }
         }
 
