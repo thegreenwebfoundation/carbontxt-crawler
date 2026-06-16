@@ -41,7 +41,8 @@ config:
   # These are also persisted for the parent document (see below).
   # Allows wildcards, eg. "follow.*" transfers all metadata starting with "follow.".
   metadata.transfer:
-   - carbontxt.*
+   - carbontxt.hostname
+   - carbontxt.method
 
   # Lists the metadata to persist to storage
   # These are not transferred to the outlinks. Also allows wildcards, eg. "follow.*".

@@ -69,6 +69,11 @@ public class CarbonTxtBolt extends BaseRichBolt {
                 valid = false;
                 toml.errors().forEach(error -> metadata.addValue(ERRORS, error.toString()));
             }
+
+            if (toml != null && toml.isEmpty()) {
+                valid = false;
+                metadata.addValue(ERRORS, "Empty TOML");
+            }
         }
 
         metadata.setValue(VALID, Boolean.toString(valid));
