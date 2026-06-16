@@ -30,7 +30,7 @@ services:
     restart: always
     volumes:
       - storm-supervisor-logs:/logs
-     # - ${PWD}/hostnames-100M.gz:/mnt/hostnames.gz:ro # Read-only mount
+      - ${PWD}/hostnames.gz:/mnt/hostnames.gz:ro # Read-only mount
 
   ui:
     image: storm:2.8.8
