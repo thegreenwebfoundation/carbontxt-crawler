@@ -132,13 +132,13 @@ public class FileSpout extends BaseRichSpout {
                 return;
             }
             Path inputPath = Paths.get(file);
-            InputStream is = new FileInputStream(inputPath.toFile());
+            InputStream is = new BufferedInputStream(new FileInputStream(inputPath.toFile()));
             try {
                 String fileLower = file.toLowerCase();
                 if (fileLower.endsWith(".gz") || fileLower.endsWith(".gzip")) {
                     is = new GZIPInputStream(is);
                 } else if (fileLower.endsWith(".bz2")) {
-                    is = new BZip2CompressorInputStream(is);
+                    is = new BZip2CompressorInputStream(is, true);
                 }
                 currentBuffer =
                         new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
