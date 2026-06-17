@@ -13,8 +13,7 @@ Apache StormCrawler runs on an Apache Storm crawler. Please go to the [Apache St
 - **Maven** 3.x
 - **Docker** and **Docker Compose**
 
-We provide a `docker-compose.yaml` file to launch OpenSearch, Zookeeper, Storm Nimbus, Storm Supervisor, and the Storm UI.
-Please note that this is designed to work on a single machine to keep things simple.
+An [Ansible](https://docs.ansible.com/) playbook `playbook.yml` is provided to  install these on a remote server.
 
 # Compilation
 
@@ -26,7 +25,30 @@ mvn clean package
 
 This packages the StormCrawler code and resources that are then deployed on the Apache Storm cluster. 
 
+# Hostnames
+
+We get the list of hostnames to process from the [CommonCrawl Foundation](https://commoncrawl.org). They maintain a list of the most popular hostnames from their graphs,
+see https://data.commoncrawl.org/projects/hyperlinkgraph/cc-main-2026-mar-apr-may/index.html.
+
+First retrieve the full list of sorted hostnames with
+
+`curl -O https://data.commoncrawl.org/projects/hyperlinkgraph/cc-main-2026-mar-apr-may/host/cc-main-2026-mar-apr-may-host-ranks.txt.gz`
+
+The entries are reversed e.g. `com.facebook.www`.
+
+The following command will keep the top 10M hostnames, normalise the entries and get them ready for injection.
+
+```
+zcat cc-main-2026-mar-apr-may-host-ranks.txt.gz |  head -n 10000000 | cut -f5 | awk -F. '{for (i=NF; i>0; i--) printf "%s%s", $i, (i>1 ? "." : "\n")}' | gzip > hostnames.gz
+```
+
+The file containing the hostnames is mounted on the Storm supervisor container in the next step. Make sure you generate the list of hostnames before
+starting the containers (or restart them).
+
 # Start Docker containers
+
+We provide a `docker-compose.yaml` file to launch OpenSearch, Zookeeper, Storm Nimbus, Storm Supervisor, and the Storm UI.
+Please note that this is designed to work on a single machine to keep things simple.
 
 ``` sh
  export OPENSEARCH_INITIAL_ADMIN_PASSWORD=This1sAPassw0rd!
@@ -45,23 +67,6 @@ This populates the OpenSearch Dashboard running on http://localhost:5601/. When 
 Check that the Storm UI is up and running on http://localhost:8080/.
 
 **NOTE** the OpenSearch setup is not configured to be secure, do not use it as-is for other purposes.
-
-# Hostnames
-
-We get the list of hostnames to process from the [CommonCrawl Foundation](https://commoncrawl.org). They maintain a list of the most popular hostnames from their graphs,
-see https://data.commoncrawl.org/projects/hyperlinkgraph/cc-main-2026-mar-apr-may/index.html.
-
-First retrieve the full list of sorted hostnames with 
-
-`curl -O https://data.commoncrawl.org/projects/hyperlinkgraph/cc-main-2026-mar-apr-may/host/cc-main-2026-mar-apr-may-host-ranks.txt.gz`
-
-The entries are reversed e.g. `com.facebook.www`.
-
-The following command will keep the top 10M hostnames, normalise the entries and get them ready for injection.
-
-```
-zcat cc-main-2026-mar-apr-may-host-ranks.txt.gz |  head -n 10000000 | cut -f5 | awk -F. '{for (i=NF; i>0; i--) printf "%s%s", $i, (i>1 ? "." : "\n")}' | gzip > hostnames.gz
-```
 
 # URL injection
 

@@ -1,0 +1,113 @@
+---
+- name: Setup user, Docker, Docker Compose, Git, and SSH access
+  hosts: all
+  become: true
+  vars_prompt:
+    - name: new_user
+      prompt: "Enter the username to create"
+      private: false
+
+    - name: new_user_password_plain
+      prompt: "Enter the password for the new user"
+      private: true
+
+    - name: ssh_public_key
+      prompt: "Enter your public SSH key"
+      private: false
+
+  vars:
+    new_user_password: "{{ new_user_password_plain | password_hash('sha512') }}"
+
+  tasks:
+    # Create a new user
+    - name: Create a new user
+      ansible.builtin.user:
+        name: "{{ new_user }}"
+        password: "{{ new_user_password }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        create_home: yes
+
+    # Set up SSH directory and authorized_keys
+    - name: Create .ssh directory
+      ansible.builtin.file:
+        path: "/home/{{ new_user }}/.ssh"
+        state: directory
+        owner: "{{ new_user }}"
+        group: "{{ new_user }}"
+        mode: "0700"
+
+    - name: Add SSH public key
+      ansible.builtin.copy:
+        content: "{{ ssh_public_key }}"
+        dest: "/home/{{ new_user }}/.ssh/authorized_keys"
+        owner: "{{ new_user }}"
+        group: "{{ new_user }}"
+        mode: "0600"
+
+    # Ensure SSH service is running
+    - name: Ensure SSH is enabled and running
+      ansible.builtin.service:
+        name: ssh
+        enabled: yes
+        state: started
+
+    # Install prerequisites
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - openjdk-17-jdk
+          - maven
+        update_cache: yes
+
+    # Download and run the official Docker installation script
+    - name: Download Docker installation script
+      ansible.builtin.get_url:
+        url: https://get.docker.com
+        dest: /tmp/get-docker.sh
+        mode: "0755"
+
+    - name: Run Docker installation script
+      ansible.builtin.command: sh /tmp/get-docker.sh
+      changed_when: true
+
+    # Add user to docker group
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ new_user }}"
+        groups: docker
+        append: yes
+
+    # Create docker-compose compatibility shim
+    - name: Create docker-compose compatibility shim
+      ansible.builtin.copy:
+        dest: /usr/local/bin/docker-compose
+        content: |
+          #!/bin/sh
+          exec docker compose "$@"
+        mode: "0755"
+
+    # Verify installations
+    - name: Verify Docker
+      ansible.builtin.command: docker --version
+      changed_when: false
+
+    - name: Verify Docker Compose
+      ansible.builtin.command: docker compose version
+      changed_when: false
+
+    - name: Verify Git
+      ansible.builtin.command: git --version
+      changed_when: false
+
+    - name: Verify Java
+      ansible.builtin.command: java -version
+      changed_when: false
+
+    - name: Verify Maven
+      ansible.builtin.command: mvn -version
+      changed_when: false
