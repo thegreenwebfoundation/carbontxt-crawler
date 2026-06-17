@@ -14,7 +14,7 @@ Apache StormCrawler runs on an Apache Storm crawler. Please go to the [Apache St
 - **Docker** and **Docker Compose**
 
 We provide a `docker-compose.yaml` file to launch OpenSearch, Zookeeper, Storm Nimbus, Storm Supervisor, and the Storm UI.
-
+Please note that this is designed to work on a single machine to keep things simple.
 
 # Compilation
 
@@ -133,11 +133,15 @@ The [Storm UI](http://localhost:8080) can be used in combination with the [Metri
 
 The crawl keeps track of the method used to find the carbon.txt file (`root`, `well-known`,`dns`,`http`), in the event where a URL is found via more than one path, only the first one is tracked.
 
-**NOTE**
+# Hardware and configuration
 
 Due to the large number of hostnames and the fact that the crawl queries for DNS records, it is important to use a fast and reliable DNS server (i.e. probably not the one from your internet provider).
+Google DNS (`8.8.8.8` and `8.8.4.4`) are free, robust and quite fast; the docker compose file uses them for the container `supervisor` but this can be changed if needed.
 
-Google DNS (`8.8.8.8` and `8.8.4.4`) are free, robust and quite fast.
+It is advisable to have 
+
+Apart from a fast internet connection, you need a machine with at least 16GB RAM and 100GB SSD storage.
+The `status` index on OpenSearch takes 45.5GB for 200M URLs (from 100M hostnames), i.e. an average of 227.5 bytes per doc.
 
 ### Index reset
 

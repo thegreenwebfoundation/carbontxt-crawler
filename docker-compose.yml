@@ -28,6 +28,9 @@ services:
       - nimbus
       - zookeeper
     restart: always
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     volumes:
       - storm-supervisor-logs:/logs
       - ${PWD}/hostnames.gz:/mnt/hostnames.gz:ro # Read-only mount
