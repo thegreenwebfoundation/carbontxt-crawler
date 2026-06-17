@@ -114,6 +114,7 @@ config:
   - carbontxt.method=method
   - carbontxt.hostname=hostname
   - carbontxt.content=content
+  - carbontxt.fetch.date=fetch_date
 
   # Metrics consumers:
   topology.metrics.consumer.register:

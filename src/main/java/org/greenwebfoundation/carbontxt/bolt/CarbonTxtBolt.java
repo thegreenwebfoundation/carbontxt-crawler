@@ -17,6 +17,8 @@ import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
 
 import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
 
@@ -92,6 +94,13 @@ public class CarbonTxtBolt extends BaseRichBolt {
         // it is declared as type binary in schema
         byte[] encodedBytes = Base64.getEncoder().encode(content);
         metadata.setValue(CONTENT, new String(encodedBytes));
+
+        // set fetch date as "yyyyMMdd"
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String dateString = today.format(formatter);
+        metadata.setValue(FETCH_DATE, dateString);
+
         collector.emit(input, new Values(url, content, metadata));
         collector.ack(input);
     }
