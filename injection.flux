@@ -13,6 +13,10 @@ includes:
       file: "opensearch-conf.yaml"
       override: true
 
+    - resource: false
+      file: "injection-conf.yaml"
+      override: true
+
 spouts:
   - id: "filespout"
     className: "org.apache.stormcrawler.spout.FileSpout"

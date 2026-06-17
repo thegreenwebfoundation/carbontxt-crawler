@@ -105,7 +105,7 @@ config:
   opensearch.status.recentDate.increase: -1
   opensearch.status.recentDate.min.gap: -1
 
-  status.updater.use.cache: false
+  status.updater.use.cache: true
 
   topology.metrics.consumer.register:
        - class: "org.apache.stormcrawler.opensearch.metrics.MetricsConsumer"

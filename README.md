@@ -85,6 +85,7 @@ and sends them to the Storm cluster.
 export NETWORK=carbontxt-crawler_default
                                                                         
 docker run --network $NETWORK -it --rm \
+  -v "$(pwd)/injection-conf.yaml:/apache-storm/injection-conf.yaml" \
   -v "$(pwd)/crawler-conf.yaml:/apache-storm/crawler-conf.yaml" \
   -v "$(pwd)/opensearch-conf.yaml:/apache-storm/opensearch-conf.yaml" \
   -v "$(pwd)/injection.flux:/apache-storm/injection.flux" \
