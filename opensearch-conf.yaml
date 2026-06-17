@@ -95,7 +95,7 @@ config:
   opensearch.status.global.sort.field: "nextFetchDate"
 
   # AggregationSpout : sampling improves the performance on large crawls
-  opensearch.status.sample: false
+  opensearch.status.sample: true
 
   # max allowed duration of a query in sec
   opensearch.status.query.timeout: -1

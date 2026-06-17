@@ -22,7 +22,11 @@
                 },
 				"url": {
 					"type": "keyword"
-				}
+				},
+                "fetch_date": {
+                    "type": "date",
+                    "format": "basic_date"
+                }
 			}
 	}
 }

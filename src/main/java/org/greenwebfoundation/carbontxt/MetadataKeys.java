@@ -9,4 +9,5 @@ public class MetadataKeys
     public static final String HOSTNAME = "carbontxt.hostname";
     public static final String CONTENT = "carbontxt.content";
     public static final String ERRORS = "carbontxt.errors";
+    public static final String FETCH_DATE = "carbontxt.fetch.date";
 }
