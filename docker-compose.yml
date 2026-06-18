@@ -47,16 +47,16 @@ services:
     volumes:
       - storm-ui-logs:/logs
 
-  opensearch-node1: # This is also the hostname of the container within the Docker network (i.e. https://opensearch-node1/)
-    image: opensearchproject/opensearch:2.19.5 # Specifying the latest available image - modify if you want a specific version
+  opensearch-node1:
+    image: opensearchproject/opensearch:3
     container_name: opensearch-node1
     environment:
-      - cluster.name=opensearch-cluster # Name the cluster
-      - node.name=opensearch-node1 # Name the node that will run in this container
-      - discovery.seed_hosts=opensearch-node1 # Nodes to look for when discovering the cluster
-      - cluster.initial_cluster_manager_nodes=opensearch-node1 # Nodes eligible to serve as cluster manager
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - discovery.seed_hosts=opensearch-node1
+      - cluster.initial_cluster_manager_nodes=opensearch-node1
       - bootstrap.memory_lock=true # Disable JVM heap memory swapping
-      - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g" # Set min and max JVM heap sizes to at least 50% of system RAM
+      - "OPENSEARCH_JAVA_OPTS=-Xms4g -Xmx4g" # Set min and max JVM heap sizes to at least 50% of system RAM
       - plugins.security.disabled=true
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
     ulimits:
@@ -71,20 +71,20 @@ services:
     ports:
       - 9200:9200 # REST API
       - 9600:9600 # Performance Analyzer
-    # restart: always
+    restart: always
 
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.19.5 # Make sure the version of opensearch-dashboards matches the version of opensearch installed on other nodes
+    image: opensearchproject/opensearch-dashboards:3
     container_name: opensearch-dashboards
     ports:
-      - 5601:5601 # Map host port 5601 to container port 5601
+      - 5601:5601
     expose:
-      - "5601" # Expose port 5601 for web access to OpenSearch Dashboards
+      - "5601"
     environment:
       - 'OPENSEARCH_HOSTS=["http://opensearch-node1:9200"]'
-      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true" # disables security dashboards plugin in OpenSearch Dashboards
+      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true"
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
-    # restart: always
+    restart: always
 
 volumes:
   opensearch-data1:
