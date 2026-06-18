@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -13,21 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash
-
 OSHOST=${1:-"http://localhost:9200"}
 OSCREDENTIALS=${2:-"-u opensearch:passwordhere"}
 
-curl $OSCREDENTIALS -s -XDELETE "$OSHOST/status/" >  /dev/null
-echo "Deleted 'status' index, now recreating it..."
-curl $OSCREDENTIALS -s -XPUT "$OSHOST/status" -H 'Content-Type: application/json' --upload-file src/main/resources/status.mapping
+INDICES=("status" "content" "queues")
 
-echo ""
+for index in "${INDICES[@]}"; do
+  echo "Deleting and recreating index: $index"
 
-curl $OSCREDENTIALS -s -XDELETE "$OSHOST/content/" >  /dev/null
-echo "Deleted 'content' index, now recreating it..."
-curl $OSCREDENTIALS -s -XPUT "$OSHOST/content" -H 'Content-Type: application/json' --upload-file src/main/resources/indexer.mapping
-
+  curl $OSCREDENTIALS -s -XDELETE "$OSHOST/$index/" > /dev/null
+  echo "Deleted '$index' index, now recreating it..."
+  curl $OSCREDENTIALS -s -XPUT "$OSHOST/$index" -H 'Content-Type: application/json' --upload-file "src/main/resources/$index.mapping"
+  echo ""
+done
 
 curl $OSCREDENTIALS -s -XDELETE "$OSHOST/metrics*/" >  /dev/null
 

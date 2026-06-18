@@ -107,6 +107,11 @@ config:
 
   status.updater.use.cache: true
 
+  # QueueSpout configurations
+  opensearch.queues.index.name: "queues"
+  opensearch.queues.max.urls: 100
+  opensearch.queues.page.size: 50
+
   topology.metrics.consumer.register:
        - class: "org.apache.stormcrawler.opensearch.metrics.MetricsConsumer"
          parallelism.hint: 1

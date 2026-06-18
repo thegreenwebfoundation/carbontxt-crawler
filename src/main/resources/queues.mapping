@@ -1,0 +1,29 @@
+{
+	"settings": {
+		"index": {
+			"number_of_shards": 10,
+			"number_of_replicas": 0,
+			"refresh_interval": "1s"
+		}
+	},
+	"mappings": {
+			"_source": {
+				"enabled": true
+			},
+			"properties": {
+				"key": {
+					"type": "keyword"
+				},
+				"nextFetchDate": {
+					"type": "date",
+					"format": "date_optional_time"
+				},
+				"status": {
+					"type": "keyword"
+				},
+				"metadata": {
+					"type": "flat_object"
+				}
+			}
+	}
+}

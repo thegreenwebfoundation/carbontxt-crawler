@@ -67,6 +67,7 @@ public class DNSDiscoveryBolt extends StatusEmitterBolt {
                                 if (str.startsWith(key)) {
                                     String value = str.substring(key.length());
                                     // check that the value is a valid URL
+
                                     // if not, check whether it is a hostname
                                     // in which case we'd trigger a new seed generation
                                     if (value.startsWith("http")) {

@@ -24,26 +24,20 @@ spouts:
     constructorArgs:
       - "/mnt"
       - "hostnames.gz"
-      - false
+      - true
 
 bolts:
   - id: "generator"
     className: "org.greenwebfoundation.carbontxt.bolt.SeedGenerator"
     parallelism: 1
 
-  - id: "status"
-    className: "org.apache.stormcrawler.opensearch.persistence.StatusUpdaterBolt"
+  - id: "queues"
+    className: "org.apache.stormcrawler.opensearch.persistence.QueueBolt"
     parallelism: 2
 
 streams:
   - from: "filespout"
-    to: "generator"
-    grouping:
-      type: FIELDS
-      args: ["url"]
-
-  - from: "generator"
-    to: "status"
+    to: "queues"
     grouping:
       type: FIELDS
       args: ["url"]
