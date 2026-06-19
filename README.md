@@ -66,7 +66,7 @@ This populates the OpenSearch Dashboard running on http://localhost:5601/. When 
 
 Check that the Storm UI is up and running on http://localhost:8080/.
 
-**NOTE** the OpenSearch setup is not configured to be secure, do not use it as-is for other purposes.
+**NOTE** to keep the instructions simple, the OpenSearch setup used here is not secure: **ONLY USE IN A SAFE ENVIRONMENT WHERE THE PORTS ARE NOT PUBLICLY AVAILABLE**.
 
 ## URL injection
 
