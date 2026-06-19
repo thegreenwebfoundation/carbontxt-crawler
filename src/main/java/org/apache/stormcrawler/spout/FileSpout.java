@@ -20,7 +20,6 @@ package org.apache.stormcrawler.spout;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,7 +29,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,6 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Delete once this version is released in StormCrawler.
+ *
  * Reads the lines from a UTF-8 file and use them as a spout. The spout reads files in chunks of
  * 10,000 lines, keeping memory usage very low even for extremely large files with millions of seed
  * URLs. Uses StringTabScheme to parse the lines into URLs and Metadata, generates tuples on the
@@ -62,18 +62,18 @@ public class FileSpout extends BaseRichSpout {
 
     public static final int BATCH_SIZE = 10000;
     public static final Logger LOG = LoggerFactory.getLogger(FileSpout.class);
-    private String dir;
-    private String filter;
-    private String[] files;
     private transient Queue<String> inputFiles;
+    private final String seedDir;
+    private final String fileFilter;
+    private final String[] seedFiles;
     protected transient SpoutOutputCollector collector;
     protected Scheme scheme = new StringTabScheme();
     protected LinkedList<byte[]> buffer = new LinkedList<>();
     protected boolean active;
-    protected int totalTasks;
-    protected int taskIndex;
-    private transient BufferedReader currentBuffer;
-    private boolean withDiscoveredStatus = false;
+    protected transient int totalTasks;
+    protected transient int taskIndex;
+    private BufferedReader currentBuffer;
+    private final boolean withDiscoveredStatus;
 
     /**
      * @param dir containing the seed files
@@ -99,8 +99,9 @@ public class FileSpout extends BaseRichSpout {
      */
     public FileSpout(String dir, String filter, boolean withDiscoveredStatus) {
         this.withDiscoveredStatus = withDiscoveredStatus;
-        this.dir = dir;
-        this.filter = filter;
+        this.seedDir = dir;
+        this.fileFilter = filter;
+        this.seedFiles = null;
     }
 
     /**
@@ -110,11 +111,13 @@ public class FileSpout extends BaseRichSpout {
      * @since 1.13
      */
     public FileSpout(boolean withDiscoveredStatus, String... files) {
-        this.withDiscoveredStatus = withDiscoveredStatus;
         if (files.length == 0) {
             throw new IllegalArgumentException("Must configure at least one inputFile");
         }
-        this.files = files;
+        this.withDiscoveredStatus = withDiscoveredStatus;
+        this.seedDir = null;
+        this.fileFilter = null;
+        this.seedFiles = files;
     }
 
     /**
@@ -159,7 +162,17 @@ public class FileSpout extends BaseRichSpout {
             if (line.startsWith("#")) {
                 continue;
             }
-            buffer.add(line.trim().getBytes(StandardCharsets.UTF_8));
+            // check whether this entry should be skipped?
+            // totalTasks could be at 0 if a subclass forgot to
+            // call this classes open()
+            if (totalTasks == 0 || linesRead % totalTasks == taskIndex) {
+                LOG.debug(
+                        "Adding to buffer for spout {} -> line ({}) {}",
+                        taskIndex,
+                        linesRead,
+                        line);
+                buffer.add(line.trim().getBytes(StandardCharsets.UTF_8));
+            }
             linesRead++;
         }
 
@@ -180,29 +193,33 @@ public class FileSpout extends BaseRichSpout {
         totalTasks = context.getComponentTasks(context.getThisComponentId()).size();
         taskIndex = context.getThisTaskIndex();
 
-        this.inputFiles = new LinkedList<>();
-        List<String> allFiles = new ArrayList<>();
+        // Resolve the seeds here, not in the constructor: in distributed mode the
+        // spout is serialised on the submit client and only open() runs on the
+        // workers, where the seed directory/files actually live (issue #1955).
+        inputFiles = new LinkedList<>();
+        populateInputFiles();
+    }
 
-        if (dir != null) {
-            Path pdir = Paths.get(dir);
-            LOG.info("Reading directory: {} (filter: {})", pdir, filter);
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir, filter)) {
+    /**
+     * Resolves the configured seed directory or file list into {@link #inputFiles}. Called from
+     * {@link #open} so the filesystem is read on the worker, not on the client at construction
+     * time.
+     */
+    private void populateInputFiles() {
+        if (seedDir != null) {
+            Path pdir = Paths.get(seedDir);
+            LOG.info("Reading directory: {} (filter: {})", pdir, fileFilter);
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(pdir, fileFilter)) {
                 for (Path entry : stream) {
-                    allFiles.add(entry.toAbsolutePath().toString());
+                    String inputFile = entry.toAbsolutePath().toString();
+                    inputFiles.add(inputFile);
+                    LOG.info("Input : {}", inputFile);
                 }
             } catch (IOException ioe) {
-                LOG.error("IOException: %s%n", ioe);
+                LOG.error("IOException while reading seed directory {}", pdir, ioe);
             }
-        } else if (files != null) {
-            Collections.addAll(allFiles, files);
-        }
-
-        for (int i = 0; i < allFiles.size(); i++) {
-            if (i % totalTasks == taskIndex) {
-                String assignedFile = allFiles.get(i);
-                inputFiles.add(assignedFile);
-                LOG.info("Task {} assigned input file: {}", taskIndex, assignedFile);
-            }
+        } else {
+            Collections.addAll(inputFiles, seedFiles);
         }
     }
 
