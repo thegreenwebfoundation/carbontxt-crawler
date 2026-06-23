@@ -30,7 +30,7 @@ bolts:
     parallelism: 1
   - id: "dns"
     className: "org.greenwebfoundation.carbontxt.bolt.DNSDiscoveryBolt"
-    parallelism: 100
+    parallelism: 200
   - id: "carbontxt"
     className: "org.greenwebfoundation.carbontxt.bolt.CarbonTxtBolt"
     parallelism: 1
