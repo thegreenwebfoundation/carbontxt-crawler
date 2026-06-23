@@ -67,9 +67,9 @@ config:
   # version of your crawler
   http.agent.version: "1.0"
   # description of what it does
-  http.agent.description: "Web Crawler for the Green Software Foundation to measure the adoption of the carbon.txt initiative"
+  http.agent.description: "Web Crawler for the Green Web Foundation to measure the adoption of the carbon.txt initiative"
   # URL webmasters can go to to learn about it
-  http.agent.url: "https://carbontxt.org/"
+  http.agent.url: "https://www.thegreenwebfoundation.org/green-web-checker-faq/"
   # Finally, an email so that they can get in touch with you
   http.agent.email: "support@greenweb.org"
 
