@@ -62,6 +62,7 @@
           - git
           - openjdk-17-jdk
           - maven
+          - jq
         update_cache: yes
 
     # Download and run the official Docker installation script
