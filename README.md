@@ -51,7 +51,6 @@ We provide a `docker-compose.yaml` file to launch OpenSearch, Zookeeper, Storm N
 Please note that this is designed to work on a single machine to keep things simple.
 
 ``` sh
- export OPENSEARCH_INITIAL_ADMIN_PASSWORD=This1sAPassw0rd!
  docker compose up -d
 ```
 
@@ -61,12 +60,12 @@ then once everything is up and running call
  dashboards/importDashboards.sh
 ```
 
-This populates the OpenSearch Dashboard running on http://localhost:5601/. When connecting for the first time, you might need to enter the 
-`OPENSEARCH_INITIAL_ADMIN_PASSWORD` specified above.
-
+This populates the OpenSearch Dashboard running on http://localhost:5601/. 
 Check that the Storm UI is up and running on http://localhost:8080/.
 
-**NOTE** to keep the instructions simple, the OpenSearch setup used here is not secure: **ONLY USE IN A SAFE ENVIRONMENT WHERE THE PORTS ARE NOT PUBLICLY AVAILABLE**.
+**NOTE** 
+To keep the instructions simple, the OpenSearch setup used here is not secure: **ONLY USE IN A SAFE ENVIRONMENT WHERE THE PORTS ARE NOT PUBLICLY AVAILABLE**.
+Even with the security off, OpenSearch requires a `OPENSEARCH_INITIAL_ADMIN_PASSWORD` variable to be set, this is stored in the `.env` file.
 
 ## URL injection
 
@@ -144,10 +143,10 @@ The crawl keeps track of the method used to find the carbon.txt file (`root`, `w
 Due to the large number of hostnames and the fact that the crawl queries for DNS records, it is important to use a fast and reliable DNS server (i.e. probably not the one from your internet provider).
 Google DNS (`8.8.8.8` and `8.8.4.4`) are free, robust and quite fast; the docker compose file uses them for the container `supervisor` but this can be changed if needed.
 
-It is advisable to have 
-
 Apart from a fast internet connection, you need a machine with at least 16GB RAM and 100GB SSD storage.
 The `status` index on OpenSearch takes 45.5GB for 200M URLs (from 100M hostnames), i.e. an average of 227.5 bytes per doc.
+
+Finally, OpenSearch recommends that the swap is turned off, this is done with `sudo swapoff -a` on Linux.
 
 ## Index reset
 
