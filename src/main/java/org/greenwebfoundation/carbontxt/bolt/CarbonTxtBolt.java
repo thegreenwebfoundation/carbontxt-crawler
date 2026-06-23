@@ -76,6 +76,15 @@ public class CarbonTxtBolt extends BaseRichBolt {
                 valid = false;
                 metadata.addValue(ERRORS, "Empty TOML");
             }
+
+            // single node with http code
+            if (toml != null && toml.size() == 1) {
+                String key = toml.keySet().iterator().next();
+                if (key.matches("\\d{3}")) { // Checks if the key is a 3-digit number (e.g., "404")
+                    valid = false;
+                    metadata.addValue(ERRORS, "Single node with HTTP code: " + key);
+                }
+            }
         }
 
         metadata.setValue(VALID, Boolean.toString(valid));

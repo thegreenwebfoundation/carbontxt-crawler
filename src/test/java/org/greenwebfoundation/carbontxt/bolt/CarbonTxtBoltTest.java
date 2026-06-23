@@ -143,6 +143,42 @@ class CarbonTxtBoltTest {
     }
 
     @Test
+    void testExecuteWithInvalidTomlHTTPcode() {
+        Tuple input = mock(Tuple.class);
+        when(input.getStringByField("url")).thenReturn("https://example.com/carbon.txt");
+
+        String tomlContent = "[404]";
+        byte[] contentBytes = tomlContent.getBytes(StandardCharsets.UTF_8);
+        when(input.getBinaryByField("content")).thenReturn(contentBytes);
+
+        Metadata metadata = new Metadata();
+        when(input.getValueByField("metadata")).thenReturn(metadata);
+
+        bolt.execute(input);
+
+        // Verify metadata values
+        assertEquals("false", metadata.getFirstValue(VALID));
+        assertNull(metadata.getFirstValue(CONTENT));
+
+        String[] errors = metadata.getValues(ERRORS);
+        assertNotNull(errors);
+        assertTrue(errors.length > 0);
+        assertFalse(errors[0].isBlank());
+
+        // Verify emit on status stream with status ERROR
+        ArgumentCaptor<Values> valuesCaptor = ArgumentCaptor.forClass(Values.class);
+        verify(collector).emit(eq("status"), eq(input), valuesCaptor.capture());
+
+        Values values = valuesCaptor.getValue();
+        assertEquals("https://example.com/carbon.txt", values.get(0));
+        assertEquals(metadata, values.get(1));
+        assertEquals(Status.ERROR, values.get(2));
+
+        // Verify ack
+        verify(collector).ack(input);
+    }
+
+    @Test
     void testDeclareOutputFields() {
         org.apache.storm.topology.OutputFieldsDeclarer declarer = mock(org.apache.storm.topology.OutputFieldsDeclarer.class);
         bolt.declareOutputFields(declarer);
