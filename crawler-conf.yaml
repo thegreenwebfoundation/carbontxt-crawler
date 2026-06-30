@@ -29,8 +29,12 @@ config:
 
   fetcher.queue.mode: "byDomain"
 
+  protocol.instances.num: 5
+
   # override the JVM parameters for the workers
   topology.worker.childopts: "-Xmx4g -Djava.net.preferIPv4Stack=true"
+  # alternatively
+  # topology.worker.max.heap.size.mb: 8192
 
   # mandatory when using Flux
   topology.kryo.register:
