@@ -42,6 +42,12 @@ The following command will keep the top 10M hostnames, normalise the entries and
 zcat cc-main-2026-mar-apr-may-host-ranks.txt.gz |  head -n 10000000 | cut -f5 | awk -F. '{for (i=NF; i>0; i--) printf "%s%s", $i, (i>1 ? "." : "\n")}' | gzip > hostnames.gz
 ```
 
+The variant below illustrates how to get a list of hostnames for the ones ranked between 50M and 100M.
+
+```
+zcat cc-main-2026-mar-apr-may-host-ranks.txt.gz | sed -n '50000001,100000000p' | cut -f5 | awk -F. '{for (i=NF; i>0; i--) printf "%s%s", $i, (i>1 ? "." : "\n")}' | gzip > 50_100M_hostnames.gz
+```
+
 The file containing the hostnames is mounted on the Storm supervisor container in the next step. Make sure you generate the list of hostnames before
 starting the containers (or restart them).
 
@@ -162,6 +168,8 @@ Here is an example:
 ```json lines
 {"url":"https://thegreenwebfoundation.org/carbon.txt","hostname":"thegreenwebfoundation.org","method":"root","fetch_date":"20260617","content":"dmVyc2lvbj0iMC40IgpsYXN0X3VwZGF0ZWQ9IjIwMjUtMTItMjIiCgpbb3JnXQpkaXNjbG9zdXJlcyA9IFsKCXsgZG9jX3R5cGU9J3dlYi1wYWdlJywgdXJsPSdodHRwczovL3d3dy50ZWNoY2FyYm9uc3RhbmRhcmQub3JnL2Nhc2Utc3R1ZGllcy9ncmVlbi13ZWItZm91bmRhdGlvbi9vdmVydmlldycsIHRpdGxlPSdNZXRob2RvbG9neSBvZiBhcHBseWluZyB0aGUgVGVjaCBDYXJib24gU3RhbmRhcmQgdG8gR3JlZW4gV2ViIEZvdW5kYXRpb24nIH0sCiAgICB7IGRvY190eXBlPSdvdGhlcicsIHVybD0naHR0cHM6Ly93d3cudGhlZ3JlZW53ZWJmb3VuZGF0aW9uLm9yZy8ud2VsbC1rbm93bi90Y3MuanNvbicsIHZhbGlkX3VudGlsPScyMDIzLTEyLTMxJywgdGl0bGU9JzIwMjMgZGlnaXRhbCBlc3RhdGUgZW1pc3Npb24gZXN0aW1hdGVzIGZvciBHcmVlbiBXZWIgRm91bmRhdGlvbicgfQpdCgpbdXBzdHJlYW1dCnNlcnZpY2VzID0gWwoJeyBkb21haW49J3d3dy5oZXR6bmVyLmNvbScsIHNlcnZpY2VfdHlwZT0nYmxvY2stc3RvcmFnZScgfSwKICAgIHsgZG9tYWluPSd3d3cuaGV0em5lci5jb20nLCBzZXJ2aWNlX3R5cGU9J3ZpcnR1YWwtcHJpdmF0ZS1zZXJ2ZXJzJyB9LAogICAgeyBkb21haW49J3d3dy5zY2FsZXdheS5jb20nLCBzZXJ2aWNlX3R5cGU9J29iamVjdC1zdG9yYWdlJyB9LAogICAgeyBkb21haW49J3d3dy4zNHNwLmNvbScsIHNlcnZpY2VfdHlwZT0nbWFuYWdlZC13b3JkcHJlc3MtaG9zdGluZycgfSwKICAgIHsgZG9tYWluPSd3d3cuY2xvdWRmbGFyZS5jb20nLCBzZXJ2aWNlX3R5cGU9J2NvbnRlbnQtZGVsaXZlcnktbmV0d29yaycgfQpd"}
 ```
+
+The file resulting from the initial crawl of the top 100M hostnames in June/July 2026 is at `carbontxt.ndjson`.
 
 ## License
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
