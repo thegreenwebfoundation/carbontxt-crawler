@@ -23,7 +23,7 @@ services:
   supervisor:
     image: storm:2.8.8
     container_name: supervisor
-    command: storm supervisor
+    command: storm supervisor -c storm.local.hostname=localhost
     depends_on:
       - nimbus
       - zookeeper
@@ -34,6 +34,21 @@ services:
     volumes:
       - storm-supervisor-logs:/logs
       - ${PWD}/hostnames.gz:/mnt/hostnames.gz:ro # Read-only mount
+
+  # Serves the worker logs linked from the Storm UI. Shares the supervisor's
+  # log volume (it can only serve files it can see) and is published on the
+  # port 8000 that the localhost log links point to.
+  logviewer:
+    image: storm:2.8.8
+    container_name: logviewer
+    command: storm logviewer
+    depends_on:
+      - supervisor
+    restart: always
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - storm-supervisor-logs:/logs
 
   ui:
     image: storm:2.8.8
